@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal Portfolio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Fira Code', monospace;
+        }
+        .terminal-container {
+            height: 90vh;
+            max-height: 800px;
+        }
+        #terminal-output::-webkit-scrollbar {
+            width: 8px;
+        }
+        #terminal-output::-webkit-scrollbar-track {
+            background: #1e1e1e;
+        }
+        #terminal-output::-webkit-scrollbar-thumb {
+            background-color: #4f4f4f;
+            border-radius: 4px;
+        }
+        .prompt-symbol {
+            color: #4ade80; /* green-400 */
+        }
+        .command-input {
+            color: #e5e5e5; /* neutral-200 */
+        }
+        .output-command {
+            color: #93c5fd; /* blue-300 */
+        }
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 1.2em;
+            background-color: #f5f5f5; /* neutral-100 */
+            animation: blink 1s step-end infinite;
+            vertical-align: bottom;
+        }
+        @keyframes blink {
+            from, to { background-color: transparent }
+            50% { background-color: #f5f5f5; }
+        }
+        a {
+            color: #60a5fa; /* blue-400 */
+            text-decoration: underline;
+        }
+        a:hover {
+            color: #93c5fd; /* blue-300 */
+        }
+    </style>
+</head>
+<body class="bg-neutral-900 text-neutral-200 flex items-center justify-center min-h-screen p-4">
+
+    <!-- Terminal Window -->
+    <div class="w-full max-w-4xl mx-auto bg-neutral-800 rounded-lg shadow-2xl terminal-container flex flex-col">
+        
+        <!-- Terminal Header -->
+        <div class="bg-neutral-700 p-3 rounded-t-lg flex items-center">
+            <div class="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+            <div class="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
+            <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+            <span class="ml-auto text-sm text-neutral-400">your-name@portfolio</span>
+        </div>
+
+        <!-- Terminal Body -->
+        <div id="terminal-output" class="flex-grow p-4 overflow-y-auto text-sm" onclick="document.getElementById('command-input').focus();">
+            <!-- Output will be dynamically added here -->
+        </div>
+
+        <!-- Input Line -->
+        <div class="p-4 border-t border-neutral-700">
+            <div class="flex items-center">
+                <span class="prompt-symbol mr-2">guest@dev:~$</span>
+                <input type="text" id="command-input" class="bg-transparent border-none outline-none w-full command-input" autocomplete="off" autofocus>
+                <span class="cursor"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const terminalOutput = document.getElementById('terminal-output');
+        const commandInput = document.getElementById('command-input');
+
+        let commandHistory = [];
+        let historyIndex = -1;
+
+        // --- EDIT THIS SECTION FOR YOUR PERSONAL INFO ---
+        const neofetch = `
+<pre class="text-green-400">
+        _______
+       /  1998 \\
+      /  _   _  \\
+     |  | | | |  |      <span class="text-white font-bold">Your Name</span>
+     |  | O | O  |      -----------
+     |  \\_---_/  |      <span class="text-white">OS:</span> Web Browser
+      \\         /       <span class="text-white">Host:</span> Your Portfolio
+       \\_______/        <span class="text-white">Title:</span> Full-Stack Developer
+      /   ---   \\       <span class="text-white">Skills:</span> JavaScript, React, Node.js, Python
+     / /       \\ \\      <span class="text-white">Contact:</span> your.email@example.com
+    / /|       |\\ \\
+   / / |       | \\ \\
+  /_/  |_______|  \\_\\
+       |       |
+       |       |
+</pre>
+        `;
+
+        const commands = {
+            'help': 'Available commands: <span class="output-command">about</span>, <span class="output-command">projects</span>, <span class="output-command">contact</span>, <span class="output-command">skills</span>, <span class="output-command">clear</span>, <span class="output-command">neofetch</span>',
+            'about': 'I am a passionate developer with a love for creating innovative and efficient solutions. I enjoy tackling complex problems and learning new technologies.',
+            'projects': `
+                <h3 class="text-yellow-300 font-bold mb-2">My Projects:</h3>
+                <ul>
+                    <li>- <a href="#" target="_blank">Project One</a> - A brief description of this awesome project.</li>
+                    <li>- <a href="#" target="_blank">Project Two</a> - A brief description of this other cool thing.</li>
+                    <li>- <a href="#" target="_blank">Project Three</a> - A brief description of this final masterpiece.</li>
+                </ul>
+            `,
+            'contact': `
+                You can reach me via:
+                <ul>
+                    <li>- Email: <a href="mailto:your.email@example.com">your.email@example.com</a></li>
+                    <li>- GitHub: <a href="https://github.com/yourusername" target="_blank">github.com/yourusername</a></li>
+                    <li>- LinkedIn: <a href="https://linkedin.com/in/yourusername" target="_blank">linkedin.com/in/yourusername</a></li>
+                </ul>
+            `,
+            'skills': 'My technical skills include: JavaScript, TypeScript, React, Next.js, Node.js, Express, Python, Django, SQL, NoSQL, Docker, and AWS.',
+            'neofetch': neofetch,
+        };
+        // --- END OF EDITABLE SECTION ---
+
+        // Function to print output to the terminal
+        function printOutput(output, isCommand = false) {
+            const line = document.createElement('div');
+            if (isCommand) {
+                line.innerHTML = `<span class="prompt-symbol">guest@dev:~$</span> <span class="text-neutral-200">${output}</span>`;
+            } else {
+                line.innerHTML = output;
+            }
+            terminalOutput.appendChild(line);
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        }
+
+        // Function to handle command execution
+        function executeCommand(command) {
+            command = command.toLowerCase().trim();
+            printOutput(command, true);
+            
+            if (command) {
+                commandHistory.unshift(command);
+                historyIndex = -1;
+            }
+
+            if (command === 'clear') {
+                terminalOutput.innerHTML = '';
+            } else if (commands[command]) {
+                printOutput(commands[command]);
+            } else if (command === '') {
+                // Do nothing for empty command
+            }
+            else {
+                printOutput(`Command not found: ${command}. Type 'help' for a list of commands.`);
+            }
+            commandInput.value = '';
+        }
+        
+        // Event listener for Enter key
+        commandInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                executeCommand(commandInput.value);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (historyIndex < commandHistory.length - 1) {
+                    historyIndex++;
+                    commandInput.value = commandHistory[historyIndex];
+                }
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    commandInput.value = commandHistory[historyIndex];
+                } else {
+                    historyIndex = -1;
+                    commandInput.value = '';
+                }
+            }
+        });
+
+        // Initial welcome message
+        function showWelcomeMessage() {
+            printOutput('Welcome to my interactive portfolio!');
+            printOutput('Type <span class="output-command">help</span> to see the list of available commands.');
+            printOutput('<br>');
+            printOutput(neofetch);
+        }
+
+        showWelcomeMessage();
+
+    </script>
+</body>
+</html>
